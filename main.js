@@ -18,38 +18,50 @@ app.post("/analyze", async (req, res) => {
         year: 'numeric', month: 'long', day: 'numeric' 
     });
 
-    // We use gemini-2.0-flash or gemini-flash-latest
+    console.log(`Request received for: ${text}`);
+
+    // We use gemini-2.0-flash because it was in your list.js
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash", 
-      tools: [{ googleSearchRetrieval: {} }], // THE WEB SEARCH IS BACK
     });
 
     const prompt = `
       TODAY'S DATE: ${today}.
       You are a professional fact-checker. 
-      
-      TASK: 
-      1. Search the web for: "${text}"
-      2. Check if reputable news sources (BBC, Reuters, AP, etc.) are reporting this.
-      3. If the news is not found on the web, label it as FAKE or UNVERIFIED.
+      Analyze this news: "${text}"
       
       Respond ONLY in this format:
       VERDICT: [REAL / FAKE / UNVERIFIED]
-      SEARCH_FINDINGS: [State what you found on the live web today]
-      REASON: [Short explanation]
+      REASON: [Short explanation based on events up to ${today}]
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response.text(); // Remember the 'await'!
+    let result;
+    try {
+      // Try to use the Search Tool with 2.0 Flash
+      result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        tools: [{ googleSearchRetrieval: {} }] 
+      });
+    } catch (searchError) {
+      console.log("Search tool failed or not allowed, switching to standard AI...");
+      // FALLBACK: Use gemini-flash-latest which we know works for you
+      const fallbackModel = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+      result = await fallbackModel.generateContent(prompt);
+    }
 
+    const response = await result.response.text();
     res.json({ result: response });
 
   } catch (error) {
-    console.error("❌ SEARCH ERROR:", error);
-    res.status(500).json({ error: "Search failed. Please try again in 10 seconds." });
+    console.error("❌ CRITICAL ERROR:", error.message);
+    res.status(500).json({ 
+      result: "The AI server is busy or restarting. Please try again in 30 seconds." 
+    });
   }
 });
 
-app.listen(3000, () => {
-  console.log("🚀 Server is running");
+// Start server on port 3000 (Render will handle this)
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
 });
