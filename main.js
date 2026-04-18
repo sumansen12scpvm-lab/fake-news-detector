@@ -18,38 +18,37 @@ app.post("/analyze", async (req, res) => {
         year: 'numeric', month: 'long', day: 'numeric' 
     });
 
-    // Using gemini-2.0-flash because it was in your list.js output
+    // We use gemini-flash-latest because we know it worked for you before
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash", 
-      tools: [{ googleSearchRetrieval: {} }],
+      model: "gemini-flash-latest",
+      // We are removing the search tool for one test to see if the server wakes up
     });
 
     const prompt = `
-      CURRENT DATE: ${today}
-      You are a professional fact-checker. Use Google Search to verify this: "${text}"
+      CONTEXT: Today is ${today}. 
+      You are a professional fact-checker. 
+      Analyze this news: "${text}"
       
       Respond ONLY in this format:
       VERDICT: [REAL / FAKE / UNVERIFIED]
       CONFIDENCE: [0-100%]
-      SOURCE: [Reputable news site found]
-      REASON: [Short explanation based on search results for ${today}]
+      REASON: [Short explanation based on your knowledge up to 2026]
     `;
 
-    console.log("Analyzing with gemini-2.0-flash and Google Search...");
+    console.log("Request received. Analyzing...");
 
     const result = await model.generateContent(prompt);
-    
-    // --- FIXED LINE BELOW (Added await) ---
     const response = await result.response.text(); 
 
     res.json({ result: response });
 
   } catch (error) {
-    console.error("❌ ERROR:", error.message);
-    res.status(500).json({ error: "AI search failed. The model might not support web search yet." });
+    // This will print the EXACT error to your Render Logs
+    console.error("❌ ERROR DETAILS:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
 app.listen(3000, () => {
-  console.log("🚀 Server started");
+  console.log("🚀 Server is running");
 });
