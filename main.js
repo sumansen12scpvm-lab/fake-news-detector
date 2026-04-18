@@ -15,7 +15,6 @@ app.get("/", (req, res) => {
 
 app.post("/analyze", async (req, res) => {
   try {
-    console.log("Analyze route hit");
     const { text } = req.body;
     if (!text) return res.json({ error: "No text provided" });
 
@@ -23,29 +22,33 @@ app.post("/analyze", async (req, res) => {
         year: 'numeric', month: 'long', day: 'numeric' 
     });
 
-    // Use gemini-1.5-flash as it is more stable for the search tool
-   const model = genAI.getGenerativeModel({
-      model: "gemini-flash-latest", // This was in your list.js!
-      tools: [{ googleSearchRetrieval: {} }],
-    });
+    // We removed the 'tools' section because it was causing the 429 error
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
-    const prompt = `Today is ${today}. Fact-check this: "${text}". Respond in Verdict/Confidence/Reason format.`;
+    const prompt = `
+      Today's Date: ${today}.
+      You are a professional fact-checker. 
+      Analyze this news text for authenticity, logical consistency, and tone: "${text}"
+      
+      Respond in this format:
+      VERDICT: [REAL / FAKE / UNVERIFIED]
+      CONFIDENCE: [0-100%]
+      REASON: [Explain why based on your knowledge of world events up to 2026]
+    `;
 
+    console.log("Analyzing...");
     const result = await model.generateContent(prompt);
-    
-    // ✅ CRITICAL FIX: Added 'await' here
     const response = await result.response.text(); 
 
     res.json({ result: response });
 
   } catch (error) {
-    console.error("❌ BACKEND ERROR:", error.message);
-    res.status(500).json({ error: error.message });
+    console.error("❌ ERROR:", error.message);
+    res.status(500).json({ error: "The AI is currently busy. Please try again in 10 seconds." });
   }
 });
 
-// ✅ CRITICAL FIX: Use process.env.PORT for Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server started on port ${PORT}`);
+  console.log(`🚀 Server started`);
 });
