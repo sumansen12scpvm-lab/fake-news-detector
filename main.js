@@ -39,28 +39,40 @@ app.post("/analyze", async (req, res) => {
     if (!text) {
       return res.json({ error: "No text provided" });
     }
+        const today = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', month: 'long', day: 'numeric' 
+    });
+
 
     const model = genAI.getGenerativeModel({
       model: "gemini-flash-latest",
+      tools: [
+        {
+          googleSearchRetrieval: {}, // THIS IS THE MAGIC KEY
+        },
+      ],
     });
     console.log("Using model: gemini-flash-latest");
     
 
     const prompt = `
-      You are a professional fact-checker and investigative journalist. 
-      Analyze the following news text for signs of misinformation, clickbait, or "fake news."
+      CURRENT DATE: ${today}
+      
+      You are a professional fact-checker with LIVE ACCESS to Google Search.
+      
+      CRITICAL INSTRUCTION: 
+      1. Do NOT rely on your internal knowledge cutoff. 
+      2. You MUST use your Google Search tool to find the most recent news reports from 2025 and 2026.
+      3. Verify the current political leadership and international situations via live search before giving a verdict.
+      4. If major news outlets (AP, Reuters, BBC) are reporting the news you find, it is REAL. If NO reputable source mentions it, it is LIKELY FAKE.
 
-      Evaluate the text based on:
-      1. Tone: Is it overly emotional or sensationalist?
-      2. Source: Does it mention credible sources or is it anonymous?
-      3. Plausibility: Does it claim something that would be world-changing but isn't being reported by major outlets (like a "100% cure for cancer overnight")?
+      News to analyze: "${text}"
 
       Respond ONLY in this format:
       VERDICT: [REAL / FAKE / UNVERIFIED]
       CONFIDENCE: [0-100%]
-      REASON: [A detailed 2-sentence explanation of why it might be fake or real, mentioning specific red flags like emotional language or lack of attribution.]
-
-      News: ${text}
+      SEARCH SOURCE: [Name of the reputable news site found via Google Search]
+      REASON: [Explain why it's real or fake based on what you found on the web today, ${today}]
     `;
 
 
