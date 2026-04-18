@@ -4,7 +4,7 @@ app.post("/analyze", async (req, res) => {
     const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
     // Use gemini-2.0-flash or gemini-flash-latest
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     let result;
     try {
