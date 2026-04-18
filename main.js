@@ -18,34 +18,35 @@ app.post("/analyze", async (req, res) => {
         year: 'numeric', month: 'long', day: 'numeric' 
     });
 
-    // We use gemini-flash-latest because we know it worked for you before
+    // We use gemini-2.0-flash or gemini-flash-latest
     const model = genAI.getGenerativeModel({
-      model: "gemini-flash-latest",
-      // We are removing the search tool for one test to see if the server wakes up
+      model: "gemini-2.0-flash", 
+      tools: [{ googleSearchRetrieval: {} }], // THE WEB SEARCH IS BACK
     });
 
     const prompt = `
-      CONTEXT: Today is ${today}. 
+      TODAY'S DATE: ${today}.
       You are a professional fact-checker. 
-      Analyze this news: "${text}"
+      
+      TASK: 
+      1. Search the web for: "${text}"
+      2. Check if reputable news sources (BBC, Reuters, AP, etc.) are reporting this.
+      3. If the news is not found on the web, label it as FAKE or UNVERIFIED.
       
       Respond ONLY in this format:
       VERDICT: [REAL / FAKE / UNVERIFIED]
-      CONFIDENCE: [0-100%]
-      REASON: [Short explanation based on your knowledge up to 2026]
+      SEARCH_FINDINGS: [State what you found on the live web today]
+      REASON: [Short explanation]
     `;
 
-    console.log("Request received. Analyzing...");
-
     const result = await model.generateContent(prompt);
-    const response = await result.response.text(); 
+    const response = await result.response.text(); // Remember the 'await'!
 
     res.json({ result: response });
 
   } catch (error) {
-    // This will print the EXACT error to your Render Logs
-    console.error("❌ ERROR DETAILS:", error);
-    res.status(500).json({ error: error.message });
+    console.error("❌ SEARCH ERROR:", error);
+    res.status(500).json({ error: "Search failed. Please try again in 10 seconds." });
   }
 });
 
