@@ -15,7 +15,9 @@ function App() {
       const response = await axios.post('https://fake-news-backend-qcf7.onrender.com/analyze', { text: newsText });
       setResult(response.data.result);
     } catch (error) {
-      setResult("Error: Backend not responding. Is it running on port 3000?");
+      // This will show you the ACTUAL error from Render
+      const errorMsg = error.response?.data?.error || error.message;
+      setResult("Error: " + errorMsg);
     } finally {
       setLoading(false);
     }

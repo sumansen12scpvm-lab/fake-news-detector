@@ -25,7 +25,7 @@ app.post("/analyze", async (req, res) => {
 
     // Use gemini-1.5-flash as it is more stable for the search tool
    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash", // changed from 2.5 to 2.0
+      model: "gemini-flash-latest", // This was in your list.js!
       tools: [{ googleSearchRetrieval: {} }],
     });
 
